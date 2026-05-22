@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>출력 / OOC 저장하는 사이트</title>
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255,255,255,.08), transparent 26%),
+    radial-gradient(circle at 80% 90%, rgba(255,255,255,.06), transparent 30%),
+    #111;
+  color: #eee9df;
+}
+
+button, input, textarea {
+  font-family: inherit;
+}
+
+.hidden { display: none !important; }
+
+.login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.login-box {
+  width: min(430px, 100%);
+  padding: 34px;
+  border-radius: 28px;
+  background: rgba(28,28,28,.82);
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 24px 80px rgba(0,0,0,.55);
+  backdrop-filter: blur(18px);
+  text-align: center;
+}
+
+.login-box h1 {
+  margin: 0 0 10px;
+  font-size: 26px;
+  letter-spacing: -.04em;
+}
+
+.login-box p {
+  margin: 0 0 24px;
+  color: #aaa39a;
+  font-size: 13px;
+}
+
+.code-title {
+  margin-bottom: 14px;
+  font-size: 13px;
+  letter-spacing: .22em;
+  color: #d8d0c4;
+  font-weight: 900;
+}
+
+input, textarea {
+  width: 100%;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 16px;
+  padding: 13px 15px;
+  background: #f6f1e8;
+  color: #1c1c1c;
+  outline: none;
+  font-size: 14px;
+}
+
+textarea {
+  min-height: 240px;
+  resize: vertical;
+  font-family: Consolas, monospace;
+}
+
+button {
+  cursor: pointer;
+  border: 0;
+  font-weight: 800;
+}
+
+.main-btn {
+  border-radius: 16px;
+  padding: 13px 18px;
+  background: #e8e1d4;
+  color: #161616;
+}
+
+.sub-btn {
+  border-radius: 14px;
+  padding: 10px 14px;
+  background: #252525;
+  color: #e8e1d4;
+  border: 1px solid rgba(255,255,255,.14);
+}
+
+.login-box .main-btn {
+  width: 100%;
+  margin-top: 12px;
+}
+
+header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: rgba(17,17,17,.86);
+  border-bottom: 1px solid rgba(255,255,255,.1);
+  backdrop-filter: blur(18px);
+}
+
+.topbar {
+  max-width: 1180px;
+  margin: auto;
+  padding: 18px 20px 12px;
+}
+
+.title-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.site-title {
+  font-size: 23px;
+  font-weight: 950;
+}
+
+.code-label {
+  margin-top: 4px;
+  color: #918a82;
+  font-size: 12px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.tab {
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 9px 15px;
+  background: #202020;
+  color: #aaa39a;
+  border: 1px solid rgba(255,255,255,.1);
+}
+
+.tab.active {
+  background: #e8e1d4;
+  color: #151515;
+}
+
+main {
+  max-width: 1180px;
+  margin: auto;
+  padding: 24px 20px 70px;
+}
+
+.empty {
+  min-height: 360px;
+  border: 1px dashed rgba(255,255,255,.2);
+  border-radius: 28px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: #918a82;
+  background: rgba(255,255,255,.035);
+}
+
+.empty strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #e8e1d4;
+  font-size: 18px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+.card {
+  overflow: hidden;
+  border-radius: 22px;
+  background: #202020;
+  border: 1px solid rgba(255,255,255,.1);
+  box-shadow: 0 18px 46px rgba(0,0,0,.32);
+  transition: .16s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 60px rgba(0,0,0,.48);
+}
+
+.thumb {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+  background: #292929;
+}
+
+.placeholder {
+  display: grid;
+  place-items: center;
+  color: #756f68;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.card-title {
+  padding: 13px 14px 15px;
+  color: #eee9df;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+dialog {
+  border: 0;
+  padding: 0;
+  width: min(760px, calc(100% - 28px));
+  border-radius: 24px;
+  background: #191919;
+  color: #eee9df;
+  box-shadow: 0 28px 90px rgba(0,0,0,.72);
+}
+
+dialog::backdrop {
+  background: rgba(0,0,0,.68);
+  backdrop-filter: blur(7px);
+}
+
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.field {
+  margin-bottom: 15px;
+}
+
+label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 13px;
+  font-weight: 900;
+  color: #d8d0c4;
+}
+
+.small {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #8f8981;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 0 20px 20px;
+}
+
+.viewer {
+  width: min(920px, calc(100% - 28px));
+}
+
+.viewer-content {
+  max-height: 70vh;
+  overflow: auto;
+  padding: 20px;
+  border-radius: 18px;
+  background: #fff;
+  color: #111;
+}
+
+.danger {
+  background: #7f2828;
+  color: white;
+}
+
+@media (max-width: 980px) {
+  .grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .title-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .actions {
+    justify-content: flex-start;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .login-box {
+    padding: 28px 22px;
+  }
+}
+</style>
+</head>
+<body>
+
+<section id="loginScreen" class="login">
+  <div class="login-box">
+    <div class="code-title">ENTER CORD</div>
+    <h1>출력 / OOC 저장하는 사이트</h1>
+    <p>영어와 숫자로 된 코드를 입력하면 해당 아카이브가 열립니다.</p>
+    <input id="archiveCode" placeholder="예: ARCH0416" />
+    <button class="main-btn" onclick="enterArchive()">입장</button>
+  </div>
+</section>
+
+<section id="appScreen" class="hidden">
+  <header>
+    <div class="topbar">
+      <div class="title-row">
+        <div>
+          <div class="site-title">출력 / OOC 저장하는 사이트</div>
+          <div class="code-label">현재 아카이브 코드: <span id="currentCode"></span></div>
+        </div>
+
+        <div class="actions">
+          <button class="sub-btn" onclick="openAddModal()">+ 추가</button>
+          <button class="sub-btn" onclick="exportBackup()">백업</button>
+          <button class="sub-btn" onclick="document.getElementById('importFile').click()">불러오기</button>
+          <button class="sub-btn" onclick="logout()">나가기</button>
+          <input id="importFile" type="file" accept=".json" class="hidden" onchange="importBackup(event)" />
+        </div>
+      </div>
+
+      <div id="tabs" class="tabs"></div>
+    </div>
+  </header>
+
+  <main>
+    <div id="emptyState" class="empty hidden">
+      <div>
+        <strong>아직 저장된 항목이 없습니다.</strong>
+        + 추가 버튼으로 제목, 이미지, HTML을 저장해 주세요.
+      </div>
+    </div>
+    <div id="grid" class="grid"></div>
+  </main>
+</section>
+
+<dialog id="editModal">
+  <div class="modal-head">
+    <div class="modal-title" id="editModalTitle">항목 추가</div>
+    <button class="sub-btn" onclick="closeEditModal()">닫기</button>
+  </div>
+
+  <div class="modal-body">
+    <div class="field">
+      <label>제목</label>
+      <input id="itemTitle" placeholder="제목 입력" />
+    </div>
+
+    <div class="field">
+      <label>카테고리</label>
+      <input id="itemCategory" placeholder="캐릭터 이름" />
+      <div class="small">카테고리는 캐릭터 이름 기준으로 입력하면 됩니다.</div>
+    </div>
+
+    <div class="field">
+      <label>대표 이미지</label>
+      <input id="itemImage" type="file" accept="image/*" />
+    </div>
+
+    <div class="field">
+      <label>HTML 삽입</label>
+      <textarea id="itemHtml" placeholder="여기에 HTML을 붙여넣으세요."></textarea>
+    </div>
+  </div>
+
+  <div class="modal-actions">
+    <button id="deleteBtn" class="sub-btn danger hidden" onclick="deleteItem()">삭제</button>
+    <button class="main-btn" onclick="saveItem()">확인</button>
+  </div>
+</dialog>
+
+<dialog id="viewerModal" class="viewer">
+  <div class="modal-head">
+    <div class="modal-title" id="viewerTitle"></div>
+    <div>
+      <button class="sub-btn" onclick="editCurrentItem()">수정</button>
+      <button class="sub-btn" onclick="closeViewer()">닫기</button>
+    </div>
+  </div>
+  <div class="modal-body">
+    <div id="viewerContent" class="viewer-content"></div>
+  </div>
+</dialog>
+
+<script>
+let db;
+let archiveCode = "";
+let data = { items: [] };
+let activeCategory = "전체";
+let editingId = null;
+let viewingId = null;
+
+const DB_NAME = "output_ooc_archive_db";
+const STORE_NAME = "archives";
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+
+    request.onupgradeneeded = () => {
+      request.result.createObjectStore(STORE_NAME);
+    };
+
+    request.onsuccess = () => {
+      db = request.result;
+      resolve(db);
+    };
+
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function dbGet(key) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readonly");
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function dbSet(key, value) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.put(value, key);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function enterArchive() {
+  const code = document.getElementById("archiveCode").value.trim();
+
+  if (!code) {
+    alert("아카이브 코드를 입력해 주세요.");
+    return;
+  }
+
+  archiveCode = code;
+  await openDB();
+
+  const saved = await dbGet(archiveCode);
+  data = saved || { items: [] };
+
+  document.getElementById("currentCode").textContent = archiveCode;
+  document.getElementById("loginScreen").classList.add("hidden");
+  document.getElementById("appScreen").classList.remove("hidden");
+
+  render();
+}
+
+async function saveData() {
+  await dbSet(archiveCode, data);
+}
+
+function getCategories() {
+  const categories = ["전체"];
+
+  data.items.forEach(item => {
+    if (item.category && !categories.includes(item.category)) {
+      categories.push(item.category);
+    }
+  });
+
+  return categories;
+}
+
+function renderTabs() {
+  const tabs = document.getElementById("tabs");
+  tabs.innerHTML = "";
+
+  const categories = getCategories();
+
+  if (!categories.includes(activeCategory)) {
+    activeCategory = "전체";
+  }
+
+  categories.forEach(category => {
+    const btn = document.createElement("button");
+    btn.className = "tab" + (category === activeCategory ? " active" : "");
+    btn.textContent = category;
+    btn.onclick = () => {
+      activeCategory = category;
+      render();
+    };
+    tabs.appendChild(btn);
+  });
+}
+
+function renderGrid() {
+  const grid = document.getElementById("grid");
+  const empty = document.getElementById("emptyState");
+  grid.innerHTML = "";
+
+  const items = activeCategory === "전체"
+    ? data.items
+    : data.items.filter(item => item.category === activeCategory);
+
+  if (items.length === 0) {
+    empty.classList.remove("hidden");
+    return;
+  }
+
+  empty.classList.add("hidden");
+
+  items.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.onclick = () => openViewer(item.id);
+
+    if (item.image) {
+      const img = document.createElement("img");
+      img.className = "thumb";
+      img.src = item.image;
+      img.alt = item.title;
+      card.appendChild(img);
+    } else {
+      const placeholder = document.createElement("div");
+      placeholder.className = "thumb placeholder";
+      placeholder.textContent = "NO IMAGE";
+      card.appendChild(placeholder);
+    }
+
+    const title = document.createElement("div");
+    title.className = "card-title";
+    title.textContent = item.title || "제목 없음";
+    card.appendChild(title);
+
+    grid.appendChild(card);
+  });
+}
+
+function render() {
+  renderTabs();
+  renderGrid();
+}
+
+function openAddModal() {
+  editingId = null;
+
+  document.getElementById("editModalTitle").textContent = "항목 추가";
+  document.getElementById("deleteBtn").classList.add("hidden");
+
+  document.getElementById("itemTitle").value = "";
+  document.getElementById("itemCategory").value = activeCategory === "전체" ? "" : activeCategory;
+  document.getElementById("itemHtml").value = "";
+  document.getElementById("itemImage").value = "";
+
+  document.getElementById("editModal").showModal();
+}
+
+function closeEditModal() {
+  document.getElementById("editModal").close();
+}
+
+function fileToDataURL(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) return resolve(null);
+
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+async function saveItem() {
+  const title = document.getElementById("itemTitle").value.trim();
+  const category = document.getElementById("itemCategory").value.trim() || "미분류";
+  const html = document.getElementById("itemHtml").value.trim();
+  const imageFile = document.getElementById("itemImage").files[0];
+
+  if (!title) {
+    alert("제목을 입력해 주세요.");
+    return;
+  }
+
+  if (!html) {
+    alert("HTML 내용을 입력해 주세요.");
+    return;
+  }
+
+  const imageData = await fileToDataURL(imageFile);
+
+  if (editingId) {
+    const item = data.items.find(x => x.id === editingId);
+    if (!item) return;
+
+    item.title = title;
+    item.category = category;
+    item.html = html;
+    if (imageData) item.image = imageData;
+    item.updatedAt = Date.now();
+  } else {
+    data.items.unshift({
+      id: crypto.randomUUID(),
+      title,
+      category,
+      html,
+      image: imageData,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    });
+  }
+
+  activeCategory = category;
+  await saveData();
+
+  closeEditModal();
+  render();
+}
+
+function openViewer(id) {
+  const item = data.items.find(x => x.id === id);
+  if (!item) return;
+
+  viewingId = id;
+  document.getElementById("viewerTitle").textContent = item.title;
+  document.getElementById("viewerContent").innerHTML = item.html;
+  document.getElementById("viewerModal").showModal();
+}
+
+function closeViewer() {
+  document.getElementById("viewerModal").close();
+}
+
+function editCurrentItem() {
+  const item = data.items.find(x => x.id === viewingId);
+  if (!item) return;
+
+  editingId = item.id;
+
+  document.getElementById("viewerModal").close();
+
+  document.getElementById("editModalTitle").textContent = "항목 수정";
+  document.getElementById("deleteBtn").classList.remove("hidden");
+
+  document.getElementById("itemTitle").value = item.title;
+  document.getElementById("itemCategory").value = item.category;
+  document.getElementById("itemHtml").value = item.html;
+  document.getElementById("itemImage").value = "";
+
+  document.getElementById("editModal").showModal();
+}
+
+async function deleteItem() {
+  if (!editingId) return;
+
+  if (!confirm("이 항목을 삭제할까요?")) return;
+
+  data.items = data.items.filter(item => item.id !== editingId);
+  await saveData();
+
+  editingId = null;
+  closeEditModal();
+  render();
+}
+
+function exportBackup() {
+  const backup = {
+    title: "출력 / OOC 저장하는 사이트",
+    code: archiveCode,
+    exportedAt: new Date().toISOString(),
+    data
+  };
+
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {
+    type: "application/json"
+  });
+
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${archiveCode}_archive_backup.json`;
+  a.click();
+
+  URL.revokeObjectURL(a.href);
+}
+
+async function importBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const text = await file.text();
+
+  try {
+    const backup = JSON.parse(text);
+
+    if (!backup.data || !Array.isArray(backup.data.items)) {
+      alert("올바른 백업 파일이 아닙니다.");
+      return;
+    }
+
+    if (!confirm("현재 아카이브에 백업 데이터를 불러올까요? 기존 데이터는 덮어씌워집니다.")) {
+      return;
+    }
+
+    data = backup.data;
+    await saveData();
+
+    activeCategory = "전체";
+    render();
+
+    alert("백업을 불러왔습니다.");
+  } catch (e) {
+    alert("백업 파일을 읽을 수 없습니다.");
+  } finally {
+    event.target.value = "";
+  }
+}
+
+function logout() {
+  archiveCode = "";
+  data = { items: [] };
+  activeCategory = "전체";
+  editingId = null;
+  viewingId = null;
+
+  document.getElementById("archiveCode").value = "";
+  document.getElementById("appScreen").classList.add("hidden");
+  document.getElementById("loginScreen").classList.remove("hidden");
+}
+
+document.getElementById("archiveCode").addEventListener("keydown", e => {
+  if (e.key === "Enter") enterArchive();
+});
+</script>
+
+</body>
+</html>
