@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>출력 / OOC 저장하는 사이트</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+body{background:radial-gradient(circle at 20% 10%,rgba(255,255,255,.08),transparent 26%),radial-gradient(circle at 80% 90%,rgba(255,255,255,.06),transparent 30%),#0f0f10;color:#eee9df;min-height:100vh}
+button,input,textarea{font-family:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+
+.login{min-height:100vh;display:grid;place-items:center;padding:24px}
+.login-box{width:min(430px,100%);padding:34px;border-radius:28px;background:rgba(28,28,28,.82);border:1px solid rgba(255,255,255,.12);box-shadow:0 24px 80px rgba(0,0,0,.55);backdrop-filter:blur(18px);text-align:center}
+.code-title{margin-bottom:14px;font-size:13px;letter-spacing:.22em;color:#d8d0c4;font-weight:900}
+.login-box h1{margin-bottom:10px;font-size:25px;line-height:1.25}
+.login-box p{margin-bottom:22px;color:#aaa39a;font-size:13px;line-height:1.6}
+.login-box input{width:100%;height:48px;border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:0 15px;background:#f6f1e8;color:#111;outline:none;font-size:15px}
+.main-btn{border:0;border-radius:16px;padding:13px 18px;background:#e8e1d4;color:#161616;font-weight:900}
+.login-box .main-btn{width:100%;margin-top:12px}
+
+header{position:sticky;top:0;z-index:10;background:rgba(17,17,17,.86);border-bottom:1px solid rgba(255,255,255,.1);backdrop-filter:blur(18px)}
+.topbar{max-width:1180px;margin:auto;padding:18px 20px 12px}
+.title-row{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:14px}
+.site-title{font-size:23px;font-weight:950}
+.code-label{margin-top:4px;color:#918a82;font-size:12px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.sub-btn{border-radius:14px;padding:10px 14px;background:#252525;color:#e8e1d4;border:1px solid rgba(255,255,255,.14);font-weight:900}
+.share-btn{background:#e8e1d4;color:#111}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.tab{white-space:nowrap;border-radius:999px;padding:9px 15px;background:#202020;color:#aaa39a;border:1px solid rgba(255,255,255,.1);font-weight:900}
+.tab.active{background:#e8e1d4;color:#151515}
+
+main{max-width:1180px;margin:auto;padding:24px 20px 70px}
+.notice{margin-bottom:18px;padding:14px 16px;border-radius:18px;background:rgba(232,225,212,.08);border:1px solid rgba(232,225,212,.14);color:#c9c0b4;font-size:13px;line-height:1.6}
+.empty{min-height:360px;border:1px dashed rgba(255,255,255,.2);border-radius:28px;display:grid;place-items:center;text-align:center;color:#918a82;background:rgba(255,255,255,.035);padding:30px}
+.empty strong{display:block;margin-bottom:8px;color:#e8e1d4;font-size:18px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.card{overflow:hidden;border-radius:22px;background:#202020;border:1px solid rgba(255,255,255,.1);box-shadow:0 18px 46px rgba(0,0,0,.32);transition:.16s ease;cursor:pointer}
+.card:hover{transform:translateY(-4px);box-shadow:0 24px 60px rgba(0,0,0,.48)}
+.thumb{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#292929}
+.placeholder{display:grid;place-items:center;color:#756f68;font-weight:900;letter-spacing:.08em}
+.card-title{padding:13px 14px 5px;color:#eee9df;font-size:14px;font-weight:900;line-height:1.35}
+.card-category{padding:0 14px 15px;color:#8f8981;font-size:12px}
+
+dialog{border:0;padding:0;width:min(760px,calc(100% - 28px));border-radius:24px;background:#191919;color:#eee9df;box-shadow:0 28px 90px rgba(0,0,0,.72)}
+dialog::backdrop{background:rgba(0,0,0,.68);backdrop-filter:blur(7px)}
+.modal-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.1)}
+.modal-title{font-size:18px;font-weight:950}
+.modal-body{padding:20px}
+.field{margin-bottom:15px}
+label{display:block;margin-bottom:7px;font-size:13px;font-weight:900;color:#d8d0c4}
+input,textarea{width:100%;border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:13px 15px;background:#f6f1e8;color:#1c1c1c;outline:none;font-size:14px}
+textarea{min-height:240px;resize:vertical;font-family:Consolas,"Courier New",monospace}
+.small{margin-top:6px;font-size:12px;color:#8f8981}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;padding:0 20px 20px}
+.danger{background:#7f2828;color:white}
+
+.viewer{width:min(1100px,calc(100% - 20px));height:min(92vh,calc(100vh - 20px))}
+.viewer .modal-body{height:calc(92vh - 75px);padding:0}
+.viewer-frame{height:100%;display:flex;flex-direction:column;background:#0b0b0b}
+.zoom-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px;border-bottom:1px solid rgba(255,255,255,.1);background:#141414}
+.zoom-btn{border-radius:12px;padding:9px 12px;background:#252525;color:#e8e1d4;border:1px solid rgba(255,255,255,.14);font-weight:900}
+.zoom-text{min-width:52px;text-align:center;font-size:13px;color:#d8d0c4;font-weight:900}
+.viewer-scroll{flex:1;overflow:auto;position:relative;background:#0b0b0b;touch-action:none}
+.viewer-content{position:absolute;top:0;left:0;width:max-content;min-width:100%;padding:18px;transform-origin:top left;will-change:transform}
+.viewer-inner{background:#fff;color:#111;border-radius:16px;overflow:hidden;width:max-content;min-width:360px;max-width:none}
+
+@media(max-width:980px){.grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:640px){
+  .title-row{flex-direction:column;align-items:flex-start}
+  .actions{justify-content:flex-start}
+  .grid{grid-template-columns:repeat(2,1fr);gap:12px}
+  .login-box{padding:28px 22px}
+  .site-title{font-size:22px}
+  .viewer{width:100%;height:100vh;border-radius:0}
+  .viewer .modal-body{height:calc(100vh - 75px)}
+  dialog.viewer{max-width:100%;max-height:100%}
+}
+</style>
+</head>
+
+<body>
+
+<section id="loginScreen" class="login">
+  <div class="login-box">
+    <div class="code-title">ENTER CODE</div>
+    <h1>출력 / OOC 저장하는 사이트</h1>
+    <p>코드를 입력하면 수정 가능한 아카이브로 들어갑니다.<br>공유 링크는 암호 없이 보기 전용으로 열립니다.</p>
+    <input id="archiveCode" placeholder="예: 0 / ARCH0416" />
+    <button class="main-btn" onclick="enterArchive()">입장</button>
+  </div>
+</section>
+
+<section id="appScreen" class="hidden">
+  <header>
+    <div class="topbar">
+      <div class="title-row">
+        <div>
+          <div class="site-title">출력 / OOC 저장하는 사이트</div>
+          <div class="code-label">
+            현재 모드: <span id="modeLabel"></span><span id="codeWrap"> / 코드: <span id="currentCode"></span></span>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="addBtn" class="sub-btn" onclick="openAddModal()">+ 추가</button>
+          <button id="shareBtn" class="sub-btn share-btn" onclick="copyShareLink()">공유 링크 복사</button>
+          <button class="sub-btn" onclick="logout()">나가기</button>
+        </div>
+      </div>
+      <div id="tabs" class="tabs"></div>
+    </div>
+  </header>
+
+  <main>
+    <div id="notice" class="notice hidden"></div>
+
+    <div id="emptyState" class="empty hidden">
+      <div>
+        <strong>아직 저장된 항목이 없습니다.</strong>
+        + 추가 버튼으로 제목, 이미지, HTML을 저장해 주세요.
+      </div>
+    </div>
+
+    <div id="grid" class="grid"></div>
+  </main>
+</section>
+
+<dialog id="editModal">
+  <div class="modal-head">
+    <div class="modal-title" id="editModalTitle">항목 추가</div>
+    <button class="sub-btn" onclick="closeEditModal()">닫기</button>
+  </div>
+
+  <div class="modal-body">
+    <div class="field">
+      <label>제목</label>
+      <input id="itemTitle" placeholder="제목 입력" />
+    </div>
+
+    <div class="field">
+      <label>카테고리</label>
+      <input id="itemCategory" placeholder="캐릭터 이름" />
+    </div>
+
+    <div class="field">
+      <label>대표 이미지</label>
+      <input id="itemImage" type="file" accept="image/*" />
+      <div class="small">수정할 때 이미지를 새로 넣지 않으면 기존 이미지가 유지됩니다.</div>
+    </div>
+
+    <div class="field">
+      <label>HTML 삽입</label>
+      <textarea id="itemHtml" placeholder="여기에 HTML을 붙여넣으세요."></textarea>
+    </div>
+  </div>
+
+  <div class="modal-actions">
+    <button id="deleteBtn" class="sub-btn danger hidden" onclick="deleteItem()">삭제</button>
+    <button class="main-btn" onclick="saveItem()">확인</button>
+  </div>
+</dialog>
+
+<dialog id="viewerModal" class="viewer">
+  <div class="modal-head">
+    <div class="modal-title" id="viewerTitle"></div>
+    <div>
+      <button id="editBtn" class="sub-btn" onclick="editCurrentItem()">수정</button>
+      <button class="sub-btn" onclick="closeViewer()">닫기</button>
+    </div>
+  </div>
+
+  <div class="modal-body">
+    <div class="viewer-frame">
+      <div class="zoom-bar">
+        <button class="zoom-btn" onclick="zoomOut()">－</button>
+        <span class="zoom-text" id="zoomText">100%</span>
+        <button class="zoom-btn" onclick="zoomIn()">＋</button>
+        <button class="zoom-btn" onclick="resetZoom()">100%</button>
+        <button class="zoom-btn" onclick="fitWidth()">가로맞춤</button>
+        <button class="zoom-btn" onclick="fitScreen()">전체맞춤</button>
+      </div>
+
+      <div class="viewer-scroll" id="viewerScroll">
+        <div class="viewer-content" id="viewerContentWrap">
+          <div id="viewerContent" class="viewer-inner"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script>
+const SUPABASE_URL = "https://puahlxgwvzzaatawbroe.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB1YWhseGd3dnp6YWF0YXdicm9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NTc2ODMsImV4cCI6MjA5NTAzMzY4M30.4rzn8QaH-vxJF6lrd0QMcZUtVtup33d5cQ8c3y6wwrM";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let archiveCode = "";
+let publicId = "";
+let data = { items: [] };
+let activeCategory = "전체";
+let editingId = null;
+let viewingId = null;
+let readOnlyMode = false;
+
+let currentScale = 1;
+let posX = 0;
+let posY = 0;
+let isDragging = false;
+let startX = 0;
+let startY = 0;
+let initialDistance = null;
+
+function makePublicId(){
+  return "v_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  const params = new URLSearchParams(location.search);
+  const viewId = params.get("view");
+
+  if (viewId) {
+    readOnlyMode = true;
+    publicId = viewId.trim();
+    loadArchiveByPublicId(publicId);
+  }
+});
+
+document.getElementById("archiveCode").addEventListener("keydown", e => {
+  if (e.key === "Enter") enterArchive();
+});
+
+async function enterArchive() {
+  const code = document.getElementById("archiveCode").value.trim();
+  if (!code) {
+    alert("코드를 입력해 주세요.");
+    return;
+  }
+
+  readOnlyMode = false;
+  archiveCode = code;
+  await loadArchiveByCode(code);
+}
+
+async function loadArchiveByCode(code) {
+  const { data: row, error } = await supabaseClient
+    .from("archives")
+    .select("*")
+    .eq("code", code)
+    .maybeSingle();
+
+  if (error) {
+    console.error(error);
+    alert("아카이브를 불러오지 못했습니다.");
+    return;
+  }
+
+  if (row) {
+    data = normalizeData(row.data);
+    publicId = row.public_id || makePublicId();
+
+    if (!row.public_id) {
+      await supabaseClient
+        .from("archives")
+        .update({ public_id: publicId })
+        .eq("code", code);
+    }
+  } else {
+    publicId = makePublicId();
+
+    const { error: insertError } = await supabaseClient
+      .from("archives")
+      .insert([{ code, public_id: publicId, data: { items: [] } }]);
+
+    if (insertError) {
+      console.error(insertError);
+      alert("새 아카이브를 만들지 못했습니다.");
+      return;
+    }
+
+    data = { items: [] };
+  }
+
+  showApp();
+}
+
+async function loadArchiveByPublicId(viewId) {
+  const { data: row, error } = await supabaseClient
+    .from("archives")
+    .select("*")
+    .eq("public_id", viewId)
+    .maybeSingle();
+
+  if (error) {
+    console.error(error);
+    alert("공유 아카이브를 불러오지 못했습니다.");
+    return;
+  }
+
+  if (!row) {
+    data = { items: [] };
+  } else {
+    data = normalizeData(row.data);
+    publicId = row.public_id;
+  }
+
+  showApp();
+}
+
+function normalizeData(raw){
+  let result = raw || { items: [] };
+  if (Array.isArray(result)) result = { items: result };
+  if (!Array.isArray(result.items)) result = { items: [] };
+  return result;
+}
+
+function showApp(){
+  document.getElementById("modeLabel").textContent = readOnlyMode ? "보기 전용" : "수정 가능";
+  document.getElementById("codeWrap").classList.toggle("hidden", readOnlyMode);
+  document.getElementById("currentCode").textContent = readOnlyMode ? "" : archiveCode;
+
+  document.getElementById("loginScreen").classList.add("hidden");
+  document.getElementById("appScreen").classList.remove("hidden");
+
+  document.getElementById("addBtn").classList.toggle("hidden", readOnlyMode);
+  document.getElementById("shareBtn").classList.toggle("hidden", readOnlyMode);
+  document.getElementById("editBtn").classList.toggle("hidden", readOnlyMode);
+
+  const notice = document.getElementById("notice");
+  notice.textContent = readOnlyMode
+    ? "보기 전용 링크로 접속했습니다. 암호는 표시되지 않으며 추가/수정/삭제는 할 수 없습니다."
+    : "수정 가능 모드입니다. 공유 링크를 복사하면 암호 없이 보기 전용으로 보여줄 수 있습니다.";
+  notice.classList.remove("hidden");
+
+  render();
+}
+
+async function saveData() {
+  if (readOnlyMode) {
+    alert("보기 전용 모드에서는 수정할 수 없습니다.");
+    return false;
+  }
+
+  const { error } = await supabaseClient
+    .from("archives")
+    .update({ data, public_id: publicId })
+    .eq("code", archiveCode);
+
+  if (error) {
+    console.error(error);
+    alert("저장에 실패했습니다.");
+    return false;
+  }
+
+  return true;
+}
+
+function getCategories() {
+  const categories = ["전체"];
+  data.items.forEach(item => {
+    if (item.category && !categories.includes(item.category)) categories.push(item.category);
+  });
+  return categories;
+}
+
+function renderTabs() {
+  const tabs = document.getElementById("tabs");
+  tabs.innerHTML = "";
+
+  const categories = getCategories();
+  if (!categories.includes(activeCategory)) activeCategory = "전체";
+
+  categories.forEach(category => {
+    const btn = document.createElement("button");
+    btn.className = "tab" + (category === activeCategory ? " active" : "");
+    btn.textContent = category;
+    btn.onclick = () => {
+      activeCategory = category;
+      render();
+    };
+    tabs.appendChild(btn);
+  });
+}
+
+function renderGrid() {
+  const grid = document.getElementById("grid");
+  const empty = document.getElementById("emptyState");
+  grid.innerHTML = "";
+
+  const items = activeCategory === "전체"
+    ? data.items
+    : data.items.filter(item => item.category === activeCategory);
+
+  if (items.length === 0) {
+    empty.classList.remove("hidden");
+    return;
+  }
+
+  empty.classList.add("hidden");
+
+  items.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.onclick = () => openViewer(item.id);
+
+    if (item.image) {
+      const img = document.createElement("img");
+      img.className = "thumb";
+      img.src = item.image;
+      img.alt = item.title;
+      card.appendChild(img);
+    } else {
+      const placeholder = document.createElement("div");
+      placeholder.className = "thumb placeholder";
+      placeholder.textContent = "NO IMAGE";
+      card.appendChild(placeholder);
+    }
+
+    const title = document.createElement("div");
+    title.className = "card-title";
+    title.textContent = item.title || "제목 없음";
+
+    const category = document.createElement("div");
+    category.className = "card-category";
+    category.textContent = item.category || "미분류";
+
+    card.appendChild(title);
+    card.appendChild(category);
+    grid.appendChild(card);
+  });
+}
+
+function render() {
+  renderTabs();
+  renderGrid();
+}
+
+function openAddModal() {
+  if (readOnlyMode) {
+    alert("보기 전용 모드에서는 추가할 수 없습니다.");
+    return;
+  }
+
+  editingId = null;
+  document.getElementById("editModalTitle").textContent = "항목 추가";
+  document.getElementById("deleteBtn").classList.add("hidden");
+  document.getElementById("itemTitle").value = "";
+  document.getElementById("itemCategory").value = activeCategory === "전체" ? "" : activeCategory;
+  document.getElementById("itemHtml").value = "";
+  document.getElementById("itemImage").value = "";
+  document.getElementById("editModal").showModal();
+}
+
+function closeEditModal() {
+  document.getElementById("editModal").close();
+}
+
+function fileToDataURL(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) return resolve(null);
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+async function saveItem() {
+  if (readOnlyMode) {
+    alert("보기 전용 모드에서는 저장할 수 없습니다.");
+    return;
+  }
+
+  const title = document.getElementById("itemTitle").value.trim();
+  const category = document.getElementById("itemCategory").value.trim() || "미분류";
+  const html = document.getElementById("itemHtml").value.trim();
+  const imageFile = document.getElementById("itemImage").files[0];
+
+  if (!title) {
+    alert("제목을 입력해 주세요.");
+    return;
+  }
+
+  if (!html) {
+    alert("HTML 내용을 입력해 주세요.");
+    return;
+  }
+
+  const imageData = await fileToDataURL(imageFile);
+
+  if (editingId) {
+    const item = data.items.find(x => x.id === editingId);
+    if (!item) return;
+
+    item.title = title;
+    item.category = category;
+    item.html = html;
+    if (imageData) item.image = imageData;
+    item.updatedAt = Date.now();
+  } else {
+    data.items.unshift({
+      id: crypto.randomUUID(),
+      title,
+      category,
+      html,
+      image: imageData,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    });
+  }
+
+  activeCategory = category;
+  const ok = await saveData();
+
+  if (ok) {
+    closeEditModal();
+    render();
+  }
+}
+
+function openViewer(id) {
+  const item = data.items.find(x => x.id === id);
+  if (!item) return;
+
+  viewingId = id;
+  document.getElementById("viewerTitle").textContent = item.title;
+  document.getElementById("viewerContent").innerHTML = item.html;
+  document.getElementById("editBtn").classList.toggle("hidden", readOnlyMode);
+  document.getElementById("viewerModal").showModal();
+
+  setTimeout(() => {
+    resetZoom();
+    fitWidth();
+  }, 80);
+}
+
+function closeViewer() {
+  document.getElementById("viewerModal").close();
+}
+
+function editCurrentItem() {
+  if (readOnlyMode) {
+    alert("보기 전용 모드에서는 수정할 수 없습니다.");
+    return;
+  }
+
+  const item = data.items.find(x => x.id === viewingId);
+  if (!item) return;
+
+  editingId = item.id;
+  document.getElementById("viewerModal").close();
+  document.getElementById("editModalTitle").textContent = "항목 수정";
+  document.getElementById("deleteBtn").classList.remove("hidden");
+  document.getElementById("itemTitle").value = item.title;
+  document.getElementById("itemCategory").value = item.category;
+  document.getElementById("itemHtml").value = item.html;
+  document.getElementById("itemImage").value = "";
+  document.getElementById("editModal").showModal();
+}
+
+async function deleteItem() {
+  if (readOnlyMode) {
+    alert("보기 전용 모드에서는 삭제할 수 없습니다.");
+    return;
+  }
+
+  if (!editingId) return;
+  if (!confirm("이 항목을 삭제할까요?")) return;
+
+  data.items = data.items.filter(item => item.id !== editingId);
+  const ok = await saveData();
+
+  if (ok) {
+    editingId = null;
+    closeEditModal();
+    render();
+  }
+}
+
+async function copyShareLink() {
+  if (!archiveCode || !publicId) {
+    alert("먼저 아카이브를 불러와 주세요.");
+    return;
+  }
+
+  const base = location.origin + location.pathname;
+  const shareUrl = `${base}?view=${encodeURIComponent(publicId)}`;
+
+  navigator.clipboard.writeText(shareUrl)
+    .then(() => alert("암호가 포함되지 않은 보기 전용 공유 링크를 복사했습니다."))
+    .catch(() => prompt("아래 링크를 복사해 주세요.", shareUrl));
+}
+
+function logout() {
+  archiveCode = "";
+  publicId = "";
+  data = { items: [] };
+  activeCategory = "전체";
+  editingId = null;
+  viewingId = null;
+  readOnlyMode = false;
+
+  const cleanUrl = location.origin + location.pathname;
+  history.replaceState(null, "", cleanUrl);
+
+  document.getElementById("archiveCode").value = "";
+  document.getElementById("appScreen").classList.add("hidden");
+  document.getElementById("loginScreen").classList.remove("hidden");
+}
+
+function updateViewerTransform() {
+  const wrap = document.getElementById("viewerContentWrap");
+  const zoomText = document.getElementById("zoomText");
+  wrap.style.transform = `translate(${posX}px, ${posY}px) scale(${currentScale})`;
+  zoomText.textContent = Math.round(currentScale * 100) + "%";
+}
+
+function zoomIn() {
+  currentScale = Math.min(3, currentScale + 0.1);
+  updateViewerTransform();
+}
+
+function zoomOut() {
+  currentScale = Math.max(0.35, currentScale - 0.1);
+  updateViewerTransform();
+}
+
+function resetZoom() {
+  currentScale = 1;
+  posX = 0;
+  posY = 0;
+  updateViewerTransform();
+}
+
+function fitWidth() {
+  const scroll = document.getElementById("viewerScroll");
+  const inner = document.getElementById("viewerContent");
+  const available = scroll.clientWidth - 36;
+  const contentWidth = inner.scrollWidth || inner.offsetWidth;
+  currentScale = Math.min(1, Math.max(0.35, available / contentWidth));
+  posX = 0;
+  posY = 0;
+  updateViewerTransform();
+}
+
+function fitScreen() {
+  const scroll = document.getElementById("viewerScroll");
+  const inner = document.getElementById("viewerContent");
+  const availableW = scroll.clientWidth - 36;
+  const availableH = scroll.clientHeight - 36;
+  const contentWidth = inner.scrollWidth || inner.offsetWidth;
+  const contentHeight = inner.scrollHeight || inner.offsetHeight;
+  currentScale = Math.min(1, Math.max(0.35, Math.min(availableW / contentWidth, availableH / contentHeight)));
+  posX = 0;
+  posY = 0;
+  updateViewerTransform();
+}
+
+const viewerScroll = document.getElementById("viewerScroll");
+
+viewerScroll.addEventListener("pointerdown", e => {
+  isDragging = true;
+  startX = e.clientX - posX;
+  startY = e.clientY - posY;
+  viewerScroll.setPointerCapture(e.pointerId);
+});
+
+viewerScroll.addEventListener("pointermove", e => {
+  if (!isDragging) return;
+  posX = e.clientX - startX;
+  posY = e.clientY - startY;
+  updateViewerTransform();
+});
+
+viewerScroll.addEventListener("pointerup", () => isDragging = false);
+viewerScroll.addEventListener("pointercancel", () => isDragging = false);
+
+viewerScroll.addEventListener("wheel", e => {
+  e.preventDefault();
+  if (e.deltaY < 0) zoomIn();
+  else zoomOut();
+}, { passive:false });
+
+viewerScroll.addEventListener("touchmove", e => {
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (initialDistance) {
+      const delta = distance - initialDistance;
+      currentScale += delta * 0.002;
+      currentScale = Math.max(0.35, Math.min(3, currentScale));
+      updateViewerTransform();
+    }
+
+    initialDistance = distance;
+  }
+}, { passive:false });
+
+viewerScroll.addEventListener("touchend", () => {
+  initialDistance = null;
+});
+</script>
+</body>
+</html>
